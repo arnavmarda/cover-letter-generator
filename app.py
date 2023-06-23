@@ -2,6 +2,7 @@ import streamlit as st
 from dotenv import load_dotenv
 import os.path
 from utils import handle_resume, generate_cover_letter
+import webbrowser
 
 def main():
 
@@ -38,6 +39,18 @@ def main():
     
     if output is not None:
         st.code(output)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button("Open Chat GPT"):
+                webbrowser.open_new_tab("https://chat.openai.com/")
+
+        with col2:
+            if st.button("Open Google Bard"):
+                webbrowser.open_new_tab("https://bard.google.com/")
+
+    
 
 if __name__ == "__main__":
     main()
