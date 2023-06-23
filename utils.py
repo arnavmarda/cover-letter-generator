@@ -1,4 +1,4 @@
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from PyPDF2 import PdfReader
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceInstructEmbeddings
@@ -6,6 +6,8 @@ from sample_cover_letter import example
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.llms import HuggingFaceHub
+
+
 
 def handle_resume(resume_file):
     """
@@ -27,26 +29,25 @@ def handle_resume(resume_file):
     for page in pdf_reader.pages:
         resume_text += page.extract_text()
     
-    return resume_text
+    # Create chunks from pdf text
+    chunk_size = 200
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_size*0.2,
+        length_function=len
+    )
 
-    # # Create chunks from pdf text
-    # text_splitter = CharacterTextSplitter(
-    #     separator="\n",
-    #     chunk_size=1000,
-    #     chunk_overlap=200,
-    #     length_function=len
-    # )
+    chunks = text_splitter.split_text(text=resume_text)
+    print(len(chunks))
 
-    # chunks = text_splitter.split_text(text=resume_text)
+    # Create embeddings
+    vector_embedding = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
+    vector_store = FAISS.from_texts(chunks, embedding=vector_embedding)
 
-    # # Create embeddings
-    # embedding = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
-    # vector_store = FAISS.from_embeddings(chunks, embedding=embedding)
+    # Save vector store to local storage
+    vector_store.save_local("resume")
 
-    # # Save vector store to local storage
-    # vector_store.save_local("resume")
-
-def generate_cover_letter(name, job_title, company_name, job_description, resume):
+def generate_cover_letter(name, job_title, company_name, job_description):
     """
     Function to generate cover letter based on job title and job description.
 
@@ -67,13 +68,19 @@ def generate_cover_letter(name, job_title, company_name, job_description, resume
         Generated cover letter
     """
 
-    # # Load resume vector store
-    # resume_vector_store = FAISS.load_local("resume")
+    # Load resume vector store
+    vector_embedding = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-xl")
+    resume_vector_store = FAISS.load_local("resume", embeddings=vector_embedding)
+
+    relevant_docs = resume_vector_store.similarity_search(job_description, k=5)
+    extracted_docs = ""
+    for doc in relevant_docs:
+        extracted_docs += doc.page_content
 
     # Make prompt template
-    prompt_template = """Use the resume, example cover letter, name of applier, job title, job description, and company name below to write a cover letter.
-                        The cover letter should include opening paragraph which clearly states the why you're writing name the
-                        position or type of work you’re exploring. A summary statement
+    prompt_template = """Use the resume, example cover letter, name of applier, job title, job description, and company name below to write a 300 word cover letter.
+                        The cover letter should include an opening paragraph which clearly states why you're writing, name the
+                        position you’re exploring. A summary statement
                         may work well here by including three reasons you think you would be
                         a good fit for the opportunity. The body of the letter should be one to 
                         Explain why you are interested in this employer
@@ -94,18 +101,5 @@ def generate_cover_letter(name, job_title, company_name, job_description, resume
 
     PROMPT = PromptTemplate(template=prompt_template, input_variables=["resume", "name", "job_title", "job_description", "company_name"])
 
-    # Create chain
-    llm = HuggingFaceHub(repo_id="mosaicml/mpt-7b-instruct")
-
-    chain = LLMChain(llm=llm, prompt=PROMPT)
-
-    # Generate cover letter
-    return chain.apply(
-        [{
-            "resume": handle_resume(resume),
-            "name": name,
-            "job_title": job_title,
-            "job_description": job_description,
-            "company_name": company_name
-        }]
-    )
+    # Output Cover Letter Prompt
+    return PROMPT.format(resume=extracted_docs, name=name, job_title=job_title, job_description=job_description, company_name=company_name)

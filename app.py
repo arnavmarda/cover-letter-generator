@@ -9,20 +9,20 @@ def main():
     load_dotenv()
 
     # Building the Streamlit page
-    st.set_page_config(page_title="Cover Letter Generator")
+    st.set_page_config(page_title="Cover Letter Prompt Generator")
 
     #TODO Insert css or session variables here if needed
 
-    st.header("Cover Letter Generator")
+    st.header("Cover Letter Prompt Generator")
 
     # If resume not uploaded, ask user to upload resume
-    # if not os.path.isfile("./resume"):
-    resume = st.file_uploader("Upload your resume", type=["pdf"], accept_multiple_files=False)
+    if not os.path.isdir("./resume"):
+        resume = st.file_uploader("Upload your resume", type=["pdf"], accept_multiple_files=False)
         
-        # if st.button("Upload"):
-        #     with st.spinner("Uploading resume..."):
-        #         if resume is not None:
-        #             handle_resume(resume)
+        if st.button("Upload"):
+            with st.spinner("Uploading resume..."):
+                if resume is not None:
+                    handle_resume(resume)
 
     # Ask for description of job and job title
     name = st.text_input("Your Name")
@@ -32,12 +32,12 @@ def main():
 
     # Button to generate cover letter
     output = None
-    if st.button("Generate Cover Letter"):
-        with st.spinner("Generating Cover Letter..."):
-            output = generate_cover_letter(name, job_title, company_name, job_description, resume)
+    if st.button("Generate Cover Letter Prompt"):
+        with st.spinner("Generating Cover Letter Prompt..."):
+            output = generate_cover_letter(name, job_title, company_name, job_description)
     
     if output is not None:
-        st.write(output)
+        st.code(output)
 
 if __name__ == "__main__":
     main()
