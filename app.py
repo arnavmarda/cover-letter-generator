@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os.path
 from utils import handle_resume, generate_cover_letter
 import webbrowser
+from google_api_key import GOOGLE_API_KEY
 
 def main():
 
@@ -12,8 +13,6 @@ def main():
     # Building the Streamlit page
     st.set_page_config(page_title="Cover Letter Prompt Generator")
 
-    #TODO Insert css or session variables here if needed
-
     st.header("Cover Letter Prompt Generator")
 
     # If resume not uploaded, ask user to upload resume
@@ -22,8 +21,7 @@ def main():
         
         if st.button("Upload"):
             with st.spinner("Uploading resume..."):
-                if resume is not None:
-                    handle_resume(resume)
+                handle_resume(resume)
 
     # Ask for description of job and job title
     name = st.text_input("Your Name")
@@ -33,22 +31,32 @@ def main():
 
     # Button to generate cover letter
     output = None
-    if st.button("Generate Cover Letter Prompt"):
-        with st.spinner("Generating Cover Letter Prompt..."):
+
+    if st.button("Generate Cover Letter"):
+        with st.spinner("Generating Cover Letter..."):
             output = generate_cover_letter(name, job_title, company_name, job_description)
-    
+
     if output is not None:
-        st.code(output)
+        if GOOGLE_API_KEY is not None:
+            # Cover letter generated
+            st.code(output[1])
+        else:
+            # Cover letter prompt generated
+            st.code(output[0])
 
-        col1, col2 = st.columns(2)
+            # Add buttons to open CHAT GPT and Google Bard
 
-        with col1:
-            if st.button("Open Chat GPT"):
-                webbrowser.open_new_tab("https://chat.openai.com/")
+            col1, col2 = st.columns(2)
 
-        with col2:
-            if st.button("Open Google Bard"):
-                webbrowser.open_new_tab("https://bard.google.com/")
+            with col1:
+                if st.button("Open Chat GPT"):
+                    webbrowser.open_new_tab("https://chat.openai.com/")
+
+            with col2:
+                if st.button("Open Google Bard"):
+                    webbrowser.open_new_tab("https://bard.google.com/")
+
+        
 
     
 
