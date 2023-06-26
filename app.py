@@ -11,9 +11,9 @@ def main():
     load_dotenv()
 
     # Building the Streamlit page
-    st.set_page_config(page_title="Cover Letter Prompt Generator")
+    st.set_page_config(page_title="Cover Letter Generator")
 
-    st.header("Cover Letter Prompt Generator")
+    st.header("Cover Letter Generator")
 
     # If resume not uploaded, ask user to upload resume
     if not os.path.isdir("./resume"):
